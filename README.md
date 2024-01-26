@@ -1,10 +1,23 @@
 <<<<<<< HEAD
 # OSEMBN
 
-This repo contains the Open Source Energy Modeling Base for the Nordic countries. It was derived from the [OSeMBE_ECEMF model](https://github.com/KTH-dESA/OSeMBE_ECEMF) using the scenario WP1_NetZero.
+This repo contains the Open Source Energy Modeling Base for the Nordic countries (OSEMBN). It was derived from the [OSeMBE_ECEMF model](https://github.com/KTH-dESA/OSeMBE_ECEMF) using the scenario WP1_NetZero.
 
 
-## OSeMOSYS workflow
+## Structure of the repository
+
+The config folder contains configuration files for running the model.
+The envs folder contains yaml files for conda environments needed to run the model. They are used in the snakemake workflow.
+The input_data folder contains the input data for the different scenarios.
+The scripts_py folder contains python scripts that are independend of the snakemake workflow.
+The scripts_smk folder contains python scripts that are utilized in the snakeamke workflow.
+
+## Scenarios
+
+
+
+## Running the model
+
 
 This workflow allows to run one or multiple scenarios.
 Starting from an OSeMOSYS datapackage going through all steps,

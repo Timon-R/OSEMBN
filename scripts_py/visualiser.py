@@ -33,14 +33,6 @@ from d3blocks import D3Blocks
 # import bokeh.io as bk
 
 
-# I need a decoding script that adds columns to the dataframes with the decoded meanings of the parameter names like sector etc.
-#That decoding script needs to be adjusted according to what I like to plot
-# then I can proceed like in the vizmosys example
-
-#I need to improve the visiualisation of hydrogen technologies:
-    #for transmission, the mode matters for the direction and the legend can be improved accordingly (from x to y depending on output fuel in production)
-    #
-
 valid_countries = ['All countries','Sweden', 'Norway', 'Finland', 'Denmark']
 # Define a dictionary to map country codes to country names
 country_names = {"SE": "Sweden", "NO": "Norway", "DK": "Denmark", "FI": "Finland"}
