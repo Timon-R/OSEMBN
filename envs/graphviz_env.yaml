@@ -1,0 +1,5 @@
+name: graphviz-env
+channels:
+  - anaconda
+dependencies:
+  - graphviz

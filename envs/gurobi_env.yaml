@@ -1,0 +1,8 @@
+# conda environment with gurobipy to solve OSeMOSYS models - as I have a license for gurobi 10 I need to use gurobipy 10
+name: gurobi-env
+dependencies:
+- python==3.11
+- pandas
+- pip
+- pip:
+  - gurobipy==10.0.3

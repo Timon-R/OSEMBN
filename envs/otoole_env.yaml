@@ -1,0 +1,15 @@
+# conda environment to run otoole for converting osemosys related data
+name: otoole-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - pip
+  - graphviz
+  - python
+  - networkx
+  - xlrd
+  - pydantic
+  - pip:
+    - otoole
