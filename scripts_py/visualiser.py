@@ -5,15 +5,7 @@ This script aims to visualize the results.
 
 based on vizymosys 
 
-Ideas: Plot emissions from elec-generation (AnnualTechnologyEmission)
-Plot investment into different techs
-Share of RE in elec-generation (in e-generation plot)
-
-Ideas:
-- Plot for storage (charge within year plus minus), consider seasons (probably better to limit years for exemplary visualisation)
-- Improve script so it looks more beatiful and understandable
-- Plot for capital costs of different technologies
-
+This script is not polished yet and contains a bunch of functions that can create different plots.
 """
 import plotly.express as px
 import pandas as pd

@@ -6,7 +6,7 @@ This Python script decodes technology and fuel codes.
 The main function creates a new or updates a CSV file with appended decoded descriptions in a new column.
 
 Functions:
-1. decode_code(code, specifier=None): Decodes an OSeMBE Fuel Technology or Emission code. The specifier can be 'country', 'commodity', 'technology', 'energy_level', 'age', 'size' to only return that information abaut the code.
+1. decode_code(code, specifier=None): Decodes an OSeMBE Fuel Technology or Emission code. The specifier can be 'country', 'commodity', 'technology', 'energy_level', 'age', 'size' to only return that information about the code.
 2. add_code_descriptions_to_csv(input_csv_filename, output_csv_filename=None): creates a new csv file including a new column with code descriptions.
 
 It can also be used from the command line to decode a single code or to modify a CSV file.

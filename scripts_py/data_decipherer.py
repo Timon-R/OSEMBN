@@ -1,6 +1,7 @@
 '''
 This script uses the code decipherer to decode the codes in the csv files of the input data.
 It also converts the csv files to an excel file if desired.
+Author: Timon Renzelmann
 '''
 
 import os

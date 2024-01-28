@@ -30,6 +30,10 @@ The CO2 emissions penalty has been removed and replaced with an emissions cap th
 5. **Nordic_em_free:**
 This scenario gives the model complete freedom for emissions. Neither an emissions penalty nor an emissions limit has been set.
 
+## Code deciphering
+
+The model follows the nomenclature of [the OSeMBE model](https://osembe.readthedocs.io/en/latest/). The scripts code_decipherer.py and the script data_decipherer in the folder scripts_py allow to decode the codes used in the model for technolgies, emissions and fuels for better understanding.
+
 ## Running the model
 
 The model can be run via the snakemake workflow or via the python script in the scripts_py folder.
