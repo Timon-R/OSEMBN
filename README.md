@@ -15,22 +15,22 @@ The scripts_smk folder contains python scripts that are utilized in the snakeamk
 ## Scenarios
 The model contains 5 scenarios.
 
-1. Nordic_before_interconnectors
+1. **Nordic_before_interconnectors:**
 This scenario differs from the OSeMBE scenario WP1_NetZero only in the way, that all the non-Nordic sets are deleted. This includes technologies, fuels and emissions. This also means that all the technologies that represented interconnectors to other, non-Nordic countries are deleted, too so that the Nordics are completely isolated.
 
-2. Nordic_without_H2
+2. **Nordic_without_H2:**
 This scenario contains interconnector technologies to non-Nordic countries, just as the original OSeMBE model. However, each interconnector, such as DKELDEPH2 (Denmark to Germany) has been split into two technologies ending with IH2 for imports to the Nordic country and EH2 for exports from the Nordic country. This was necessary, as the annual activity limit which was used as a contraint doesn't distuinguish between modes.
 The TotalTechnologyAnnualyActivityUpperLimit and -LowerLimit have been used to set the imports and exports to non-Nordic countries to the results from the OSeMBE WP1_NetZero scenario.
 It has to be noted, however, that this restraint neglects the temporal resolutions smaller than a year. This means, that the imports and exports take place at different time slices. However, then annual values are the same.
 The capacity for those interconnectors have been set to 8 GW, which is higher than for the OSeMBE model to avoid the model to not be able to meet the contraint. This could be reduced to a lower value but has to be at least slightly higher than for the OSeMBE model because leads to errors otherwise (as the model can't meet the contraint).
 
-3. Nordic
+3. **Nordic:**
 This model includes added hydrogen technologies (more information about this follows). However it has the same emissions penalty for CO2 as the OSeMBE model which lead to negative emissions from 2030 onwards, exploiting the biomass CCS technology that has a high carbon capture efficiency of 70-80%.
 
-4. Nordic_co2_limit
+4. **Nordic_co2_limit:**
 The emissions penalty for CO2 has been deleted and replaced with an emission limit that linearly reduces the emissions from the baseyear to 0 at 2050.
 
-5. Nordic_em_free
+5. **Nordic_em_free:**
 This scenario gives the model complete freedom for emissions. Neither an emission penalty nor an emission limit has been set.
 
 ## Running the model
