@@ -18,7 +18,7 @@ The model contains 5 scenarios.
 1. **Nordic_before_interconnectors:**
 This scenario differs from the OSeMBE scenario WP1_NetZero only in that all non-Nordic sets are deleted. This includes technologies, fuels and emissions. This also means that all technologies that represented interconnectors with other non-Nordic countries are also removed, so that the Nordics are completely isolated.
 
-2. **Nordic_without_H2:**
+2. **Nordic_no_H2:**
 This scenario includes interconnector technologies to non-Nordic countries, just like the original OSeMBE model. However, each interconnector, such as DKELDEPH2 (Denmark to Germany), has been split into two technologies ending with IH2 for imports into the Nordic country and EH2 for exports from the Nordic country. This was necessary because the annual activity limit used as a constraint doesn't distinguish between modes. The TotalTechnologyAnnualActivityUpperLimit and -LowerLimit were used to set the imports and exports to non-Nordic countries to the results from the OSeMBE WP1_NetZero scenario. However, it should be noted that this constraint neglects the temporal resolutions smaller than one year. This means that imports and exports take place in different time slices. However, the annual values are then the same. The capacity for these interconnectors has been set at 8 GW, which is higher than for the OSeMBE model, to avoid the model not being able to fulfil the constraint. This could be reduced to a lower value, but must be at least slightly higher than for the OSeMBE model, otherwise errors will occur (as the model can't meet the constraint).
 
 3. **Nordic:**
