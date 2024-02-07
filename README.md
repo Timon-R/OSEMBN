@@ -32,7 +32,7 @@ This scenario gives the model complete freedom for emissions. Neither an emissio
 
 ## Code deciphering
 
-The model follows the nomenclature of [the OSeMBE model](https://osembe.readthedocs.io/en/latest/). The scripts code_decipherer.py and the script data_decipherer in the folder scripts_py allow to decode the codes used in the model for technolgies, emissions and fuels for better understanding.
+The model follows the nomenclature of [the OSeMBE model](https://osembe.readthedocs.io/en/latest/). The scripts code_decipherer.py and the script data_decipherer in the folder scripts_py allow to decode the codes used in the model for technologies, emissions and fuels for better understanding.
 
 ## Running the model
 
