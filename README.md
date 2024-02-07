@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # OSEMBN
 
 This repo contains the Open Source Energy Modeling Base for the Nordic countries (OSEMBN). It was derived from the [OSeMBE_ECEMF model](https://github.com/KTH-dESA/OSeMBE_ECEMF) using the scenario WP1_NetZero.
