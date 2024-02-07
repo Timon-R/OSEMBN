@@ -54,3 +54,9 @@ Dependencies are defined per rule and are installed upon first running the workf
 
 1. Place datapackage(s) in the folder `input_data`. Each datapackage should be placed in a folder
 that is named after the scenario, e.g. `baseline`.
+
+##License
+
+Copyright (C) 2024 by Timon Renzelmann. Released under the [MIT license](./license/LICENSE).
+Data is licensed under the [CC-BY-SA-4.0 license](./license/LICENSE_for_data.txt) 
+
