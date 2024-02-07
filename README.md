@@ -57,6 +57,7 @@ that is named after the scenario, e.g. `baseline`.
 
 ##License
 
-Copyright (C) 2024 by Timon Renzelmann. Released under the [MIT license](./license/LICENSE).
-Data is licensed under the [CC-BY-SA-4.0 license](./license/LICENSE_for_data.txt) 
+Copyright (C) 2024 by Timon Renzelmann.
+Software is released under the [MIT license](./LICENSE).
+Data is licensed under the [CC-BY-SA-4.0 license](./LICENSE_for_data.txt) 
 
