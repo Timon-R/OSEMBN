@@ -1,11 +1,12 @@
 """
-This script aims to visualize the results. 
+This script aims to visualise the results. 
+
+It is currently tailored for the use of the hydrogen model.
+However, functions can be repurposed for other models.
 
 @author: Timon Renzelmann
 
 based on vizymosys 
-
-This script is not polished yet and contains a bunch of functions that can create different plots.
 """
 import plotly.express as px
 import pandas as pd
@@ -20,10 +21,14 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from PIL import Image
 from d3blocks import D3Blocks
-# import holoviews as hv
+import itertools
+# import holoviews as hv # for chord diagram without scale - better use the r-script
 # from holoviews import opts, dim
 # import bokeh.io as bk
-
+import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.conversion import localconverter
+from PIL import Image
 
 valid_countries = ['All countries','Sweden', 'Norway', 'Finland', 'Denmark']
 # Define a dictionary to map country codes to country names
@@ -94,15 +99,14 @@ def create_df_dict(directory_names, data_path='results'):
     # Get filenames without extensions
     filenames = {dir: set([os.path.splitext(f)[0] for f in files]) for dir, files in csv_files.items()}
     #Check for filenames that are not in all directories and only load data for common filenames
-    all_filenames = set.union(*filenames.values())
+    #all_filenames = set.union(*filenames.values())
     common_filenames = set.intersection(*filenames.values())
-    not_in_all_dirs = set(f for f in all_filenames if sum(f in filenames[dir] for dir in directories.keys()) != len(directories))  # Check which directories each unique filename exists in
-    # Check which directories each filename is missing in and print in which directories it is missing
-    for filename in not_in_all_dirs:
-        present_dirs = [dir for dir, files in filenames.items() if filename in files]
-        missing_dirs = [dir for dir in directories.keys() if dir not in present_dirs]
-        for dir in missing_dirs:
-            print(f"{filename} is missing in {dir}")
+    #not_in_all_dirs = set(f for f in all_filenames if sum(f in filenames[dir] for dir in directories.keys()) != len(directories))  # Check which directories each unique filename exists in
+    # for filename in not_in_all_dirs:
+    #     present_dirs = [dir for dir, files in filenames.items() if filename in files]
+    #     missing_dirs = [dir for dir in directories.keys() if dir not in present_dirs]
+    #     for dir in missing_dirs:
+    #         print(f"{filename} is missing in {dir}")
     # Load data for common filenames
     for param in common_filenames:
         df_dict[param] = pd.DataFrame()
@@ -112,7 +116,8 @@ def create_df_dict(directory_names, data_path='results'):
 
 def remove_unwanted_countries(dff):
     if 'TECHNOLOGY' in dff.columns:
-        dff['country'] = dff['TECHNOLOGY'].apply(cd.decode_code, args=('country',))
+        specific_values = ['ELRENEW', 'ELFOSSIL', 'ELCCS','BG','SR','BC','SC','EC']
+        dff['country'] = dff['TECHNOLOGY'].apply(lambda x: 'All countries' if x in specific_values else country_names.get(x[0:2]) if any(val in x for val in specific_values) else cd.decode_code(x, 'country'))
         dff = dff[dff['country'].isin(valid_countries)]
     elif 'FUEL' in dff.columns:
         dff['country'] = dff['FUEL'].apply(cd.decode_code, args=('country',))
@@ -123,19 +128,25 @@ def remove_unwanted_countries(dff):
     return dff
 
 def get_color(legend_value, biomass_counter, electrolysis_counter, steam_counter):
-    green_shades = ['green', 'forestgreen', 'darkgreen', 'lightgreen', 'limegreen']
+    green_shades = ['darkgreen', 'lightgreen', 'limegreen', 'forestgreen', 'green']
     blue_shades = ['blue', 'deepskyblue', 'dodgerblue', 'steelblue', 'lightblue']
-    black_shades = ['black', 'dimgray', 'gray', 'darkgray', 'silver']
+    grey_shades = ['gray', 'darkgray', 'silver', 'lightgray','dimgray' ]
+    brown_shades = ['brown', 'maroon', 'firebrick', 'indianred', 'rosybrown']
+    red_shades = ['red', 'darkred', 'crimson', 'orangered', 'tomato']
     if 'Biomass' in legend_value:
-        return green_shades[biomass_counter % len(green_shades)]
+        return brown_shades[biomass_counter % len(brown_shades)]
+    elif 'Biomass' in legend_value and 'CCS' in legend_value:
+        return red_shades[biomass_counter % len(red_shades)]
     elif 'Electrolysis' in legend_value:
-        return blue_shades[electrolysis_counter % len(blue_shades)]
+        return green_shades[electrolysis_counter % len(green_shades)]
+    elif 'Steam' in legend_value and 'CCS' in legend_value:
+        return blue_shades[steam_counter % len(grey_shades)]
     elif 'Steam' in legend_value:
-        return black_shades[steam_counter % len(black_shades)]
+        return grey_shades[steam_counter % len(grey_shades)]
     else:
-        return 'red'  # Default color
+        return 'purple'  # Default color
 
-def write_high_res_plot(dff, title, param, filedesc, is_emission=False):
+def write_high_res_plot(dff, title, param, filedesc, is_emission=False, incl_pm25 = False, y_axis_label = None):
     '''
     Description: This function plots the given DataFrame dff and writes it to a file.
     Parameters:
@@ -151,9 +162,10 @@ def write_high_res_plot(dff, title, param, filedesc, is_emission=False):
     biomass_counter = 0
     electrolysis_counter = 0
     steam_counter = 0
+    dash_counter = 0
     for i, legend_value in enumerate(dff['legend'].unique()):
         df_subset = dff[dff['legend'] == legend_value]
-        yaxis = 'y2' if is_emission and 'CO2' not in legend_value else 'y1'
+        yaxis = 'y2' if is_emission and 'CO2' not in legend_value and incl_pm25 and 'CO2' in dff['legend'].unique() else 'y1'
         dash_style = 'dot' if 'Imports' in legend_value else dash_styles[i // len(colors) % len(dash_styles)]
         if 'Biomass' in legend_value:
             color = get_color(legend_value, biomass_counter, electrolysis_counter, steam_counter)
@@ -165,17 +177,30 @@ def write_high_res_plot(dff, title, param, filedesc, is_emission=False):
             color = get_color(legend_value, biomass_counter, electrolysis_counter, steam_counter)            
             steam_counter += 1
         else:
-            color = colors[i % len(colors)]        
+            if dash_style == 'dot':
+                color = colors[dash_counter % len(colors)]
+                dash_counter += 1
+            else:
+                color = colors[i % len(colors)]   
+            
         fig.add_trace(go.Scatter(
             x=df_subset['YEAR'], y=df_subset['VALUE'],
             mode='lines', name=legend_value,
             line=dict(color=color, dash=dash_style),
+            opacity=0.8,
             yaxis=yaxis,
             showlegend=True
-        ))        
+        ))  
+    custom_template = go.layout.Template()
+    custom_template.layout = go.Layout(
+        font=dict(color='black'),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+        )      
     fig.update_layout(
-        template='plotly_white', 
+        template= custom_template, 
         title=title,
+        title_x=0.1,
         legend=dict(orientation='v', yanchor="bottom", y=1.02, xanchor="right", x=1),
         #yaxis=dict(domain=[0, 0.85], showgrid=True, gridwidth=2, gridcolor='Grey'),
         yaxis=dict(domain=[0, 0.85]),
@@ -192,10 +217,18 @@ def write_high_res_plot(dff, title, param, filedesc, is_emission=False):
         #     )
         # ]
     )
+    
     if is_emission:
-        fig.update_layout(
-            yaxis1=dict(title='CO2 in kton'),
-            yaxis2=dict(title='PM2.5 in kton', overlaying='y', side='right')
+        title_y_axis = 'CO2 in kton'
+        # if 'CO2' not in title:
+        #     title_y_axis = 'PM2.5 in kton'
+        # fig.update_layout(            
+        #     yaxis1=dict(title=title_y_axis),
+        #     yaxis2=dict(title='PM2.5 in kton', overlaying='y', side='right')
+        # )
+    elif y_axis_label != None:
+        fig.update_layout(            
+            yaxis1=dict(title=x_axis_label)
         )
         # Define the base filename
     base_filename = 'visualisations\\' + param + filedesc
@@ -212,7 +245,7 @@ def write_high_res_plot(dff, title, param, filedesc, is_emission=False):
 
 
 
-def plot_annual_sum_by_scenario(df_dict, param, list_to_group_by = ['YEAR', 'scenario']):
+def plot_annual_sum_by_scenario(df_dict, param, list_to_group_by = ['YEAR', 'scenario'], title = None):
     '''
     Description: This function plots the annual sum of the given variable for each scenario.
     Parameters:
@@ -222,10 +255,58 @@ def plot_annual_sum_by_scenario(df_dict, param, list_to_group_by = ['YEAR', 'sce
     if param != 'TotalTechnologyModelPeriodActivity' and param != 'CapitalInvestment':
             dff = remove_unwanted_countries(df_dict[param])
             dff = dff.groupby(list_to_group_by).sum().reset_index()
+            if title == None:
+                title = 'Annual sum of ' + param
             dff['legend'] = dff[[col for col in list_to_group_by if col != 'YEAR']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
-            write_high_res_plot(dff, 'Annual sum of ' + param, param, '_annual_by_scenario', is_emission= False)
+            write_high_res_plot(dff, title, param, '_annual_by_scenario', is_emission= False)
 
-def plot_annual_sum_advanced(df_dict, param, scenarios = 'all', countries = ['all'], technologies = ['all'], split_countries = True, split_techs = True):
+
+def plot_stacked_area(df_dict, param, scenario, technologies = ['all'], countries = ['all'], title = None):
+    dff = remove_unwanted_countries(df_dict[param])
+    dff = dff[dff['scenario'] == scenario]
+    list_to_group_by = ['YEAR', 'country','TECHNOLOGY']
+    if countries != ['all']:
+        dff = dff[dff['country'].isin(countries)]
+    else:
+        list_to_group_by.remove('country')
+    if technologies != ['all']:
+        dff = dff[dff['TECHNOLOGY'].isin(technologies)]
+    else:
+        list_to_group_by.remove('TECHNOLOGY')
+    dff = dff.groupby(list_to_group_by).sum().reset_index()
+    dff['TECHNOLOGY'] = dff['TECHNOLOGY'].apply(lambda x: cd.technology_codes.get(x))
+    dff['legend'] = dff['TECHNOLOGY']
+    dff = dff.sort_values(by=['YEAR', 'legend'])
+    if title == None:
+        title = 'Annual sum of ' + param
+    fig = go.Figure()
+    dff['cumulative_VALUE'] = dff.groupby('YEAR')['VALUE'].cumsum()
+    colors = ['#8B4513', 'red','green', 'grey', 'blue' ]
+    legend_values = dff['legend'].unique()
+    for i, legend_value in enumerate(legend_values):
+        df_subset = dff[dff['legend'] == legend_value]
+        fig.add_trace(go.Scatter(
+            x=df_subset['YEAR'], y=df_subset['cumulative_VALUE'],
+            mode='none',  # No markers or lines, only area
+            fill='tonexty',  # Fill area to next trace
+            name=legend_value,
+            fillcolor=colors[i % len(colors)]  # Use the color corresponding to the index
+        ))
+    custom_template = go.layout.Template()
+    custom_template.layout = go.Layout(
+        font=dict(color='black'),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+        )  
+    fig.update_layout(
+        template = custom_template,
+        title=title
+        #title_x=0
+    )
+    title = title.replace(' ', '_')
+    fig.write_image(f"visualisations/{title}.png", scale=2)  # 2x scale for higher resolution
+
+def plot_annual_sum_advanced(df_dict, param, scenarios = 'all', countries = ['all'], technologies = ['all'], split_countries = True, split_techs = True, title = None):
     '''
     Description: This function plots the annual sum of the given variable for each country.
     Parameters:
@@ -236,7 +317,7 @@ def plot_annual_sum_advanced(df_dict, param, scenarios = 'all', countries = ['al
     technologies (list): A list of technologies to be plotted. If 'all', all technologies are plotted.
     '''
     dff = remove_unwanted_countries(df_dict[param])
-    title = 'Annual sum of ' + param
+    title1 = 'Annual sum of ' + param
     if scenarios != 'all':
         dff = dff[dff['scenario'] == scenarios]
     if countries != ['all']:
@@ -247,15 +328,15 @@ def plot_annual_sum_advanced(df_dict, param, scenarios = 'all', countries = ['al
     if split_countries == False:
         list_to_group_by.remove('country')
         if countries == ['all']:
-            title += ', all countries '
+            title1 += ', all countries '
     else:
-        title += str(countries) + ' '
+        title1 += str(countries) + ' '
     if split_techs == False:
         list_to_group_by.remove('TECHNOLOGY')
-        title += ', all techs '
-    if scenarios != ['all'] and len(countries) == 1:
+        title1 += ', all techs '
+    if scenarios != 'all' and len(countries) == 1:
         list_to_group_by.remove('scenario')
-        title += ', scenario ' + scenarios
+        title1 += ', scenario ' + scenarios
     dff = dff.groupby(list_to_group_by).sum().reset_index()
     # Create a column 'legend'
     list_to_group_by.remove('YEAR')
@@ -270,9 +351,11 @@ def plot_annual_sum_advanced(df_dict, param, scenarios = 'all', countries = ['al
     if countries != 'all':
         filedesc = '_' + '_'.join(countries)
     filedesc += '_advanced'
+    if title == None:
+        title = title1
     write_high_res_plot(dff, title, param, filedesc, is_emission= False)
 
-def plot_emissions(df_dict, param, scenarios = 'all', emissions = ['all'], sum_emissions = False):
+def plot_emissions(df_dict, param, scenarios = 'all', emissions = ['all'], sum_emissions = False, title = None):
     dff = remove_unwanted_countries(df_dict[param])
     if scenarios != 'all':
         dff = dff[dff['scenario'] == scenarios]
@@ -292,15 +375,22 @@ def plot_emissions(df_dict, param, scenarios = 'all', emissions = ['all'], sum_e
     else:
         dff['emission_type'] = dff['EMISSION']
     dff = dff.groupby(['YEAR', 'scenario', 'emission_type']).sum().reset_index()
-    title = 'Annual sum of ' + param
-    if scenarios == 'all':
+    if title == None:
+        title = 'Annual sum of ' + str(dff['emission_type'].unique())
+    if scenarios == 'all' and emissions == ['all']:
         dff['legend'] = dff['scenario'] + '_' + dff['emission_type']
+    elif scenarios == 'all':
+        dff['legend'] = dff['scenario']
     else:
         dff['legend'] = dff['emission_type']
-    title = 'Annual sum of ' + param 
-    if scenarios != 'all':
-        title += ', scenario ' + scenarios     
-    write_high_res_plot(dff, title, param, '_'+scenarios, is_emission= True)
+    if 'PM25' in dff['emission_type'].unique():
+        incl_pm25 = True
+    else:
+        incl_pm25 = False
+    text = ''
+    for emission in dff['emission_type'].unique():
+        text += '_' + emission
+    write_high_res_plot(dff, title, param, text, is_emission= True, incl_pm25 = incl_pm25)
  
 def plot_hydrogen(df_dict, scenario , countries = ['all']): #Fuel cells have to be negated
     '''
@@ -341,9 +431,7 @@ def plot_hydrogen(df_dict, scenario , countries = ['all']): #Fuel cells have to 
             else: legend_entry = country_name + " Imports from " + exporting_country_name
         else:
             technology = row['TECHNOLOGY']
-            legend_entry = cd.decode_code(technology, specifier='country') + ' ' + \
-                        cd.decode_code(technology, specifier='technology') + ' ' + \
-                        cd.decode_code(technology, specifier='age')      
+            legend_entry = cd.decode_code(technology, specifier='technology') + ' ' + cd.decode_code(technology, specifier='age')      
         legend_entries.append(legend_entry)
     dff['legend'] = legend_entries
     # Negate the 'Value' if the technology includes 'FC'
@@ -353,8 +441,6 @@ def plot_hydrogen(df_dict, scenario , countries = ['all']): #Fuel cells have to 
     # Sort the DataFrame first by the 'is_import' column, and then by the 'legend'
     dff.sort_values(by=['is_import', 'legend'], inplace=True)
     write_high_res_plot(dff, title, param, '_hydrogen_'+scenario+'_'+countries[0], is_emission= False)
-
-
 
 def create_df_imports_exports(df_dict, scenarios):
     param1 = "ProductionByTechnology"
@@ -410,8 +496,7 @@ def create_import_matrix(df,scenarios, years=None):
         dff = dff[dff['YEAR'].isin(years)]
     return dff    
 
-
-def plot_exports_imports(df_dict, scenarios, country):
+def create_imports_exports_df(df_dict, scenarios, country):
     dff = create_df_imports_exports(df_dict, scenarios)
     dff = dff[dff['scenario'].isin(scenarios)]
     dff = dff[dff['TECHNOLOGY'].str.contains(country)]
@@ -431,7 +516,53 @@ def plot_exports_imports(df_dict, scenarios, country):
     #dff = dff.groupby(['YEAR', 'TIMESLICE','legend'])['VALUE'].sum().reset_index() # if you want to keep the differenciation between imports and exports
     dff['OSEMBE'] = dff['legend_trimmed'].apply(lambda x: 'OSEMBE' in x)
     dff = dff.sort_values('OSEMBE', ascending=False).drop('OSEMBE', axis=1)
+    return dff
 
+
+def plot_exports_imports_2d(df_dict, scenarios, country, neighbour, timeslices = ['all']):
+    dff = create_imports_exports_df(df_dict, scenarios, country)
+    dff = dff[dff['legend_trimmed'].str.contains(neighbour)]
+    if timeslices != ['all']:
+        dff = dff[dff['TIMESLICE'].isin(timeslices)]
+
+    # Separate the data for each scenario
+    for scenario in dff['legend_trimmed'].str[2:].unique():
+        df_scenario = dff[dff['legend_trimmed'].str[2:] == scenario]
+        df_scenario = df_scenario.sort_values(['TIMESLICE','YEAR'])
+
+        # Create a new figure for each scenario
+        fig = go.Figure()
+
+        timeslices = df_scenario['TIMESLICE'].unique()
+        color_norm = np.linspace(0, 1, len(timeslices))
+        colors = [px.colors.sequential.Viridis[int(x * (len(px.colors.sequential.Viridis) - 1))] for x in color_norm]
+
+        for timeslice, color in zip(timeslices, colors):
+            df_timeslice = df_scenario[df_scenario['TIMESLICE'] == timeslice]
+            fig.add_trace(go.Scatter(x=df_timeslice['YEAR'], y=df_timeslice['VALUE'], mode='lines', name=timeslice, line=dict(color=color)))
+
+        title = f'Imports and exports for {cd.country_codes.get(country)} and {cd.country_codes.get(neighbour)} in scenario{scenario}'
+        custom_template = go.layout.Template()
+        custom_template.layout = go.Layout(
+            font=dict(color='black'),
+            plot_bgcolor='white',
+            paper_bgcolor='white'
+            )
+        fig.update_layout(
+            template=custom_template,
+            title=title,
+            xaxis_title="YEAR",
+            yaxis_title="Electricity transmission in PJ",
+            font=dict(
+                size=18, 
+            )
+        )
+
+        filename = 'visualisations\\' + 'exports_imports_' + country + '_' + neighbour + '_' + scenario[1:] + '.png'
+        fig.write_image(filename, height=600, width=1200)
+
+def plot_exports_imports_3d(df_dict, scenarios, country):
+    dff = create_imports_exports_df(df_dict, scenarios, country)
     #plotting
     timeslice_mapping = dict(enumerate(dff['TIMESLICE'].astype('category').cat.categories))
     dff['TIMESLICE'] = dff['TIMESLICE'].astype('category').cat.codes  
@@ -500,7 +631,7 @@ def plot_hydrogen_timesliced(df_dict, scenario , country):
     dff = dff[dff['country'].isin([country])]
     # Create a column 'legend'
     dff['legend'] = dff['TECHNOLOGY'].apply(lambda x: cd.decode_code(x, specifier='technology') + ' ' + cd.decode_code(x, specifier='age'))
-    #plotting
+ #plotting
     timeslice_mapping = dict(enumerate(dff['TIMESLICE'].astype('category').cat.categories))
     dff['TIMESLICE'] = dff['TIMESLICE'].astype('category').cat.codes  
     legends = dff['legend'].unique()
@@ -553,27 +684,56 @@ def plot_chord_diagram(dff, scenario, year):
     df = dff[dff['YEAR'] == year]
     df = df[df['scenario'] == scenario]
     df = df.rename(columns={'from_country': 'source'})
-    df['source'] = df['source'].apply(lambda x: cd.country_codes.get(x))
     df = df.rename(columns={'to_country': 'target'})
-    df['target'] = df['target'].apply(lambda x: cd.country_codes.get(x))
     df = df.rename(columns={'VALUE': 'weight'})
-    df = df.drop(['YEAR', 'scenario'], axis=1).reset_index(drop=True)
-    df = df.sort_values(by=['source', 'target'])
-    #Plot
-    d3 = D3Blocks(chart='Chord', frame=False) 
-    cmap = 'tab20c' 
-    colors = ['#3182bd', '#e6550d', '#31a354', '#756bb1', '#636363', '#9ecae1', '#fdae6b', '#a1d99b', '#bcbddc', '#bdbdbd']
-    unique_values = pd.concat([dff['from_country'], dff['to_country']]).unique()
-    mapped_values = list(map(lambda x: cd.country_codes.get(x), unique_values))
-    color_dict = {country: colors[i % len(colors)] for i, country in enumerate(mapped_values)}
-    d3.set_node_properties(df, cmap=cmap)
-    d3.set_edge_properties(df, color='source', opacity='source')
-    #iterate through all edges and set the color
-    unique_values_df = pd.concat([df['target'], df['source']]).unique().tolist()
-    for value in unique_values_df:
-        color = color_dict.get(value)
-        d3.node_properties.get(value)['color'] = color
-    d3.chord(df, title = scenario + ' ' + str(year),fontsize=20, filepath = f'visualisations/chord_diagram_{scenario}_{year}.html', reset_properties = False)
+    df = df.drop(['YEAR', 'scenario'], axis=1).reset_index(drop=True) 
+    df = df.sort_values(by=['source', 'target'])   
+    df['target'] = df['target'].apply(lambda x: cd.country_codes.get(x))
+    df['source'] = df['source'].apply(lambda x: cd.country_codes.get(x))  
+    
+    # Get all unique sources and targets
+    all_nodes = list(set(df['source'].unique()).union(set(df['target'].unique())))
+
+    # Create a DataFrame with all combinations of nodes
+    all_combinations = pd.DataFrame(list(itertools.product(all_nodes, repeat=2)), columns=['source', 'target'])
+
+    # Merge with the original DataFrame
+    df = pd.merge(all_combinations, df, on=['source', 'target'], how='left')
+
+    # Fill NA values with 0
+    df['weight'] = df['weight'].fillna(0)
+
+    # Pivot the DataFrame
+    pivot_df = df.pivot(index='source', columns='target', values='weight')
+
+    title = scenario + '_' + str(year)
+    with localconverter(ro.default_converter + pandas2ri.converter):
+        # Convert the DataFrame
+        r_from_python_df = ro.conversion.py2rpy(pivot_df)
+        # Convert the index and column names
+        r_index = ro.conversion.py2rpy(pivot_df.index)
+        r_columns = ro.conversion.py2rpy(pivot_df.columns)
+        ro.r.assign("r_from_python_df", r_from_python_df)
+    ro.r['source']('scripts_py/visualiser.R')
+    # Call a function from the R script
+    # Assuming the function is called 'your_function' and takes one argument
+    ro.r['create_chord'](r_from_python_df,title, r_index,r_columns)
+    
+    #Use d3Blocks for chord diagram (doesn't have scale option)
+    # d3 = D3Blocks(chart='Chord', frame=False) 
+    # cmap = 'tab20c' 
+    # colors = ['#3182bd', '#e6550d', '#31a354', '#756bb1', '#636363', '#9ecae1', '#fdae6b', '#a1d99b', '#bcbddc', '#bdbdbd']
+    # unique_values = pd.concat([dff['from_country'], dff['to_country']]).unique().tolist()
+    # #mapped_values = list(map(lambda x: cd.country_codes.get(x), unique_values))
+    # color_dict = {country: colors[i % len(colors)] for i, country in enumerate(unique_values)}
+    # d3.set_node_properties(df, cmap=cmap)
+    # d3.set_edge_properties(df, color='source', opacity='source')
+    # #iterate through all edges and set the color
+    # unique_values_df = pd.concat([df['target'], df['source']]).unique().tolist()
+    # for value in unique_values_df:
+    #     color = color_dict.get(value)
+    #     d3.node_properties.get(value)['color'] = color
+    # d3.chord(df, title = scenario + '_' + str(year),fontsize=20, filepath = f'visualisations/chord_diagram_{scenario}_{year}.html', reset_properties = False)
 
     # Plot using holoviews
     # hv.extension('bokeh')
@@ -589,13 +749,45 @@ def plot_chord_diagram(dff, scenario, year):
     # )
     # bk.show(hv.render(plot))
 
+def plot_em_penalty():
+    # Read the Excel file
+    df = pd.read_excel('EmissionsPenalty.xlsx')
+    # Select the 3rd and 4th columns (assuming 0-indexing)
+    df_selected = df.iloc[:, [2, 3]] #2 YEAR, 3 VALUE
+    df_selected.columns = ['YEAR', 'VALUE']
+    df_selected['legend'] = 'CO2 penalty'
+    title = 'Emissions Penalty for CO2'
+    write_high_res_plot(df_selected, title, 'EmissionsPenalty', '', is_emission= False)
 
+def mod_gsa_figures(filename, name):
+        # Open the image file
+    img = Image.open(filename)
 
+    # Calculate the dimensions of the upper half
+    width, height = img.size
+    new_height = height * 4 // 7
+    top_crop = height // 12
 
+    # Crop the upper half of the image
+    upper_half = img.crop((0, top_crop , width, new_height))
+
+    # Save the upper half to a new file
+    upper_half.save(f'visualisations/GSA/{name}.png')
+
+def plot_biomass_supply(df_dict, scenario, country):
+    dff = df_dict['TotalTechnologyAnnualActivity']
+    dff = remove_unwanted_countries(dff)
+    dff = dff[dff['scenario'] == scenario]
+    #dff = dff[dff['country'] == country]
+    dff = dff[dff['TECHNOLOGY'].str.contains('BM00')]
+    dff['legend'] = dff['TECHNOLOGY'].apply(lambda x: 'Extraction' if 'X' in x else 'Imports') + ' ' + dff['country']
+    dff = dff.groupby(['YEAR', 'legend']).sum().reset_index()
+    dff = dff.sort_values(by=['legend', 'YEAR'])
+    title = f'Biomass supply for the scenario {scenario}'
+    write_high_res_plot(dff, title, 'BiomassSupply', f'_{scenario}', is_emission= False)
 
 def run():
-    scenarios = ['OSeMBE', 'Nordic_no_h2','Nordic','Nordic_co2_limit','Nordic_em_free']
-    #scenarios = ['Nordic_emission_limit']
+    scenarios = ['OSeMBE','Nordic_no_h2','Nordic','Nordic_co2_limit','Nordic_em_free']
     df_dict = create_df_dict(scenarios)
     ccs_tech = ['BMCSPN2','COCSPN2','NGCSPN2','HGSCPN2','HGBCPN2']
     bm_tech = ['BMCCPH1', 'BMCHPH3','BMSTPH3']
@@ -607,33 +799,39 @@ def run():
         for tech in bm_tech:
             bm_techs.append(country_code + tech)
 
-    d1 = create_import_matrix(df_dict, scenarios)
-    for scenario in scenarios:
-        plot_chord_diagram(d1, scenario, 2060)
+    # for selec_region in ['SE']:
+    #     electricity_generation_plot.main(selec_region, scenarios, years = [2015, 2060],temp=False, overwrite = False, width = 1000, height = 1000)
 
+    # plot_stacked_area(df_dict, 'AnnualShareOfProduction', scenario = 'Nordic', countries = ['all'], technologies = ['BG','BC','SR','SC','EC'], title = 'Share of hydrogen production in the Nordic scenario')
+    # plot_stacked_area(df_dict, 'AnnualShareOfProduction', scenario = 'Nordic_em_free', countries = ['all'], technologies = ['BG','BC','SR','SC','EC'], title = 'Share of hydrogen production in the Nordic_em_free scenario')
+    # plot_stacked_area(df_dict, 'AnnualShareOfProduction', scenario = 'Nordic_co2_limit', countries = ['all'], technologies = ['BG','BC','SR','SC','EC'], title = 'Share of hydrogen production in the Nordic_co2_limit scenario')
+       
+    # plot_annual_sum_advanced(df_dict,'AnnualShareOfProduction', scenarios = 'all', countries = ['all'], technologies = ['ELCCS'], split_countries = False, split_techs = False, title = 'Share of electricity production from CCS')
+    #plot_annual_sum_advanced(df_dict,'AnnualShareOfProduction', scenarios = 'all', countries = ['all'], technologies = ['ELFOSSIL'], split_countries = False, split_techs = False, title = 'Share of electricity production from fossil fuels')
+    #plot_annual_sum_advanced(df_dict,'AnnualShareOfProduction', scenarios = 'all', countries = ['all'], technologies = ['ELRENEW'], split_countries = False, split_techs = False, title = 'Share of electricity production from renewables (incl. waste)') 
+    # d1 = create_import_matrix(df_dict, scenarios)
+    # for scenario in scenarios:
+    #     plot_chord_diagram(d1, scenario, 2060)
 
-    #for country_code in ['SE', 'NO', 'FI', 'DK']:
-    #     #plot_annual_sum_advanced(df_dict,'ProductionByTechnologyAnnual', scenarios = 'WP1_NetZero', countries = [country_names[country_code]], technologies = css_techs, split_countries = True, split_techs = True)
-    #     #plot_annual_sum_advanced(df_dict,'ProductionByTechnologyAnnual', scenarios = 'WP1_NetZero', countries = ['all'], technologies = bm_techs, split_countries = True, split_techs = True)
-    #    plot_hydrogen_timesliced(df_dict, 'WP1_NetZero', country_names[country_code])
-
-    #plot_annual_sum_by_scenario(df_dict, 'StorageNetCharge', list_to_group_by = ['YEAR', 'scenario', 'STORAGE'])
-    #Plot annual sum of parameters for each scenario
-    #for param in ['AccumulatedNewCapacity','NewCapacity','AnnualFixedOperatingCost','AnnualVariableOperatingCost','CapitalInvestment','DiscountedSalvageValue', 'DiscountedTechnologyEmissionsPenalty','TotalCapacityAnnual']:
-    #    plot_annual_sum_by_scenario(df_dict, param)
-    #Plot annual sum of parameters for each country
-    # plot_annual_sum_advanced(df_dict,'ProductionByTechnologyAnnual', scenarios = 'WP1_NetZero', countries = ['all'], technologies = get_production_techs(hydrogen_technologies), split_countries = True, split_techs = True)
-    # plot_annual_sum_advanced(df_dict,'ProductionByTechnologyAnnual', scenarios = 'WP1_NetZero', countries = ['all'], technologies = get_transmission_techs(hydrogen_technologies), split_countries = True, split_techs = True)
-    #plot_hydrogen(df_dict, scenarios[0], countries = ['all'])
-    #plot_hydrogen(df_dict, 'WP1_NetZero_without_storage', countries = ['all'])
-    #plot_emissions(df_dict, 'AnnualEmissions', scenarios = 'all', emissions = ['CO2','PM25'], sum_emissions = True)
-    #plot_annual_sum_by_scenario(df_dict, 'TotalDiscountedCost', list_to_group_by = ['YEAR', 'scenario'])
-    #Plot electricity generation for all scenarios in one stacked bar graph for each country
-    #for selec_region in ['SE', 'NO', 'FI', 'DK']:
-         #electricity_generation_plot.main(selec_region, scenarios, temp = True, years = [2015,2030,2050,2060])
-    #    plot_hydrogen(df_dict, 'WP1_NetZero', countries = [country_names[selec_region]])
-    #    plot_exports_imports(df_dict, scenarios, selec_region)
+    # plot_emissions(df_dict, 'AnnualEmissions', scenarios = 'all', emissions = ['CO2'], sum_emissions = True, title='Annual CO2 emissions')
+    # plot_emissions(df_dict, 'AnnualEmissions', scenarios = 'all', emissions = ['PM25'], sum_emissions = True, title='Annual PM2.5 emissions')
+    # for region in country_names.values():
+    #     plot_hydrogen(df_dict, 'Nordic', countries = [region])
     
+    #plot_annual_sum_by_scenario(df_dict, 'TotalDiscountedCost', list_to_group_by = ['YEAR', 'scenario'], title = 'Total discounted cost')
+
+    # plot_em_penalty()
+
+    #plot_exports_imports_2d(df_dict, ['OSeMBE','Nordic_no_h2'],'FI','EE',['S01B2','S02B2','S03B2','S04B2','S05B2'])
+
+    #plot_biomass_supply(df_dict, 'Nordic', 'Sweden')
+
+    # Cuts the histogram plot into smaller image
+    # for filename in os.listdir('visualisations/GSA'):
+    #     if 'heatmap' not in filename:
+    #         mod_gsa_figures(f'visualisations/GSA/{filename}', filename[:-4])
+    #mod_gsa_figures(f'visualisations/GSA/SA_HydrogenStorageCapacity.png', 'SA_HydrogenStorageCapacity')
+
 #for the capacity visualisation, the import and export capacities need to be excluded so that it makes sense
 run()
         

@@ -1,0 +1,151 @@
+"""Extracts results from the list of input files
+
+Notes
+-----
+Note that this script is directly implemented into the Snakemake
+workflow and pulls the arguments for the ``main()`` function directly from
+``snakemake.input`` and ``snakemake.output[0]`` attributes on the snakemake
+object passed into this module at run time.
+"""
+
+import pandas as pd
+from typing import List, Tuple, Dict
+from pathlib import Path
+from utils import get_model_run_scenario_from_filepath, parse_yaml
+import sys
+from utils import write_results, read_results
+import itertools
+
+import logging
+
+
+def default_value_xs(df: pd.DataFrame, index: Tuple, parameters: Tuple):
+    """Populates a dataframe with zero values"""
+    
+    df = df.reset_index()
+    df = df.drop(columns="VALUE")
+    col_order = df.columns.to_list()
+    
+    col_data = {}
+    for col in df.columns:
+        if col not in index:
+            col_data[col] = [df[col].unique()]
+    for i, _ in enumerate(index):
+        col_data[index[i]] = [[parameters[i]]]
+
+    df = pd.DataFrame(col_data)
+    all_cols = df.columns
+    for col in all_cols:
+        df = df.explode(column=col)
+    df["VALUE"] = 0
+    
+    df = df.set_index(col_order)
+    return df
+    
+
+def get_indices(parameters : pd.DataFrame, filename : str) -> Dict :
+    indices = parameters.set_index('filename').loc[filename].dropna().drop('resultfile')
+    indices = indices.to_dict()
+    return {x:indices[x].split(',') for x in indices}
+
+def main(input_files: List, output_file: str, indices: Tuple, config: Dict):
+    """Iterate over list of CSV files, extract defined results, write to output file.
+
+    Parameters
+    ----------
+    input_files : List
+        List of CSVs to iterate over
+    output_file : str
+        Name of output file
+    indices : Dict
+        Indices to extract value over 
+        ex. {'REGION':['SIMPLICITY], 'TECHNOLOGY':['GAS_EXTRACTION','HYD1']}
+    config : Dict
+        otoole configuration file
+    """
+    aggregated_results = []
+    for filename in input_files:
+        try:
+            bits = get_model_run_scenario_from_filepath(filename)
+            logging.info(f"Extracting results for {filename}")
+            logging.info({bits['param']})
+            if bits['param'] not in config.keys(): #only works for AnnualShareOfProduction
+                if bits['param'] == 'AnnualShareOfProduction':
+                    df_index = ['REGION','TECHNOLOGY','YEAR','VALUE','absolute_production']
+                elif bits['param'] == 'ProductionFromFuelCells':
+                    df_index = ['REGION', 'TECHNOLOGY', 'FUEL', 'YEAR','VALUE']
+                else:
+                    logging.warning(f"Unknown parameter {bits['param']}")
+                    raise ValueError(f"Unknown parameter {bits['param']}")
+                #column_dtypes = (str, str, int, float, float)
+                column_dtypes = (str,str)
+            else:
+                df_index = config[bits['param']]['indices']
+                column_dtypes = {
+                    x:config[x]['dtype'] for x in df_index
+                }
+            #logging.info(f"Using {df_index} with {column_dtypes}")
+            df = read_results(filename)
+            df = df.astype(column_dtypes).set_index(df_index)
+            ################################################################
+            # this method of slicing and then appending is super enefficient... 
+            # will revist to speed this up 
+            result_dfs = []
+            parameters = tuple(itertools.product(*indices.values()))
+            indices_expanded = tuple([tuple(indices.keys())] * len(parameters))
+            for index, param in zip(indices_expanded, parameters):
+                try:
+                    results = df.xs(param, level=index, drop_level=False)
+                    result_dfs.append(results)
+                except KeyError as ex:
+                    logging.warning(f"KeyError: {ex} for {filename} with {index} and {param}")
+                    results = default_value_xs(df, index, param)
+                    result_dfs.append(results)
+
+            results = pd.concat(result_dfs)
+            results = results.reset_index(level='YEAR')
+            ################################################################
+            results['MODELRUN'] = bits['model_run']
+            results = results.reset_index(
+                ).set_index(['MODELRUN'] + df_index)
+            aggregated_results.append(results)
+        except Exception as ex:
+            logging.exception(f"Exception: {ex} for {filename} with {index} and {param}")
+
+        results = pd.concat(aggregated_results)
+        write_results(results, output_file, True)
+       
+
+if __name__ == '__main__':
+
+    if "snakemake" in globals():
+        input_files = snakemake.input['csvs']
+        yaml_config = snakemake.input['config']
+        output_file_path = snakemake.output[0]
+        indices = snakemake.params['parameter']
+        # Get the log file path from Snakemake
+        log_file_path = snakemake.log[0]
+        logging.basicConfig(filename=log_file_path, level=logging.INFO)
+    else:
+        if len(sys.argv) != 5:
+            raise ValueError(
+                "Usage: python extract_results.py <input_csvs> <user_config> <output_file> <result_parameters>"
+            )
+        input_files = sys.argv[1]
+        if not isinstance(input_files, list):
+            input_files = [input_files]
+        yaml_config = sys.argv[2]
+        output_file_path = sys.argv[3]
+        parameters = pd.read_csv(sys.argv[4])
+        output_file = Path(sys.argv[3]).stem
+        indices = get_indices(parameters, output_file)
+
+    if 'YEAR' in indices:
+        indices['YEAR'] = [float(x) for x in indices['YEAR']]
+    logging.info("Extracting results")
+    try:       
+        user_config = parse_yaml(yaml_config)
+        main(input_files, output_file_path, indices, user_config)
+    except Exception as ex:
+        logging.exception(f"Exception: {ex} for {input_files} with {indices}")
+        raise ex

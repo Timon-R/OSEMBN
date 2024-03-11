@@ -22,9 +22,15 @@ def sol_gurobi(lp_path: str, environment, log_path: str, threads: int):
 
 def get_duals(model):
     constraints = CONSTRAINTS
+    dic_duals = {}
     try:
         dual = model.Pi
         constr = model.getConstrs()
+    except AttributeError as e:
+        print(f"Error accessing model attributes: {e}")
+        return dic_duals
+
+    try:
         df_dual = pd.DataFrame(data= {'info': constr, 'value': dual})
         df_dual = df_dual.astype({'info': 'str'})
         meta = df_dual['info'].str.split('.', expand=True)
@@ -32,16 +38,21 @@ def get_duals(model):
         df_dual['constraint'] = meta[0]
         df_dual['sets'] = meta[1].str[:-2]
         df_dual = df_dual.drop(columns=['info'])
-    except:
-        df_dual = pd.DataFrame(columns=['value', 'constraint', 'sets'])
-    dic_duals = {}
+    except Exception as e:
+        print(f"Error processing DataFrame: {e}")
+        return dic_duals
+
     if not df_dual.empty:
         for c in constraints:
             dic_duals[c] = df_dual[df_dual['constraint']==c]
             if not dic_duals[c].empty:
-                sets = dic_duals[c]['sets'].str.split(',', expand=True).add_prefix('set_')
-                dic_duals[c] = pd.concat([dic_duals[c], sets], axis=1)
-                dic_duals[c] = dic_duals[c].drop(columns=['sets'])
+                try:
+                    sets = dic_duals[c]['sets'].str.split(',', expand=True).add_prefix('set_')
+                    dic_duals[c] = pd.concat([dic_duals[c], sets], axis=1)
+                    dic_duals[c] = dic_duals[c].drop(columns=['sets'])
+                except Exception as e:
+                    print(f"Error splitting sets: {e}")
+                    dic_duals[c] = pd.DataFrame(columns=['value', 'constraint', 'set_0', 'set_1', 'set_2'])
             else:
                 dic_duals[c] = pd.DataFrame(columns=['value', 'constraint', 'set_0', 'set_1', 'set_2'])
     return dic_duals
@@ -81,6 +92,6 @@ if __name__ == "__main__":
     env = gp.Env(log_path)
 
     model = sol_gurobi(lp_path, env, log_path, threads)
-   # dic_duals = get_duals(model)
+    #dic_duals = get_duals(model)
     #write_duals(dic_duals, dual_path)
     write_sol(model, outpath, outpath)

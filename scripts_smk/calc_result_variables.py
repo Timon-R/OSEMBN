@@ -1,11 +1,24 @@
 '''
 This script calculates additional result variables from the model output, such as the share of renewable energy and the share of CCS technology used.
 It creates new csv files with the results.
-It is currently modified for snakemake but can be modified for use without it.
 '''
 
 # Import necessary packages
 import pandas as pd
+
+
+#define lists for what techs are renewables, which are fossil and which are CCS 
+# new codes like SEELRENEW , SEELFOSSIL, SEELCCS
+# input is result folder
+# writes csv files with new result variables into that folder
+
+#for snakemake say that this rule has to be run before the other rules that need the new csv files 
+
+
+#structure: create dataframe with results from Production per technology (if certain(necessary) techs are not given or zero, add them to dataframe)
+# create new dataframe for new results
+#write new csv file with new results
+#(test this for WP1_NetZero_test first)
 
 renewable_techs = ['BF','BM','GO','HY','OCWV','SO','WI','WS','NU']
 fossil_techs = ['CO','NG','HF']
@@ -20,7 +33,7 @@ def load_data(folderpath):
 
 def remove_unnecessary_techs_EL(df):
     tech_condition = df['TECHNOLOGY'].str.contains('00X|00I|EH1|IH1|HG|00TD') == False
-    country_condition = df['TECHNOLOGY'].str.count('SE|NO|DK|FI') < 2
+    country_condition = df['TECHNOLOGY'].str.count('SE|NO|DK|FI|NL|UK') < 2
     df = df.loc[tech_condition & country_condition].copy()
     df.loc[:, 'country'] = df['TECHNOLOGY'].str[0:2]
     #print(df['TECHNOLOGY'].unique())
@@ -28,7 +41,7 @@ def remove_unnecessary_techs_EL(df):
 
 def remove_unnecessary_techs_HG(df):
     tech_condition = df['TECHNOLOGY'].str.contains('00X|00I|EH1|IH1|00TD|HGSL') == False
-    country_condition = df['TECHNOLOGY'].str.count('SE|NO|DK|FI') < 2
+    country_condition = df['TECHNOLOGY'].str.count('SE|NO|DK|FI|NL|UK') < 2
     fuel_condition = df['FUEL'].str.contains('H1') == True
     df = df.loc[tech_condition & country_condition & fuel_condition].copy()
     df.loc[:, 'country'] = df['TECHNOLOGY'].str[0:2]
@@ -42,9 +55,11 @@ def remove_unnecessary_techs_HGFC(df):
     return df
 
 def calc_share(df, techs, tech_label):
+    country_prefixes = ('DK', 'SE', 'FI', 'NO')
+    df = df[df['TECHNOLOGY'].str.startswith(country_prefixes)].copy()
     tech_regex = '|'.join(techs)
-    df_tech = df[df['TECHNOLOGY'].str.contains(tech_regex)].copy()
-    df_tech['country'] = df_tech['TECHNOLOGY'].str[0:2]
+    df_tech = df[df['TECHNOLOGY'].str.contains(tech_regex)].copy()    
+    df_tech['country'] = df_tech['TECHNOLOGY'].str[0:2]  
     df_tech_grouped = df_tech.groupby(['YEAR','country']).sum().reset_index()
 
     # Create a DataFrame with all combinations of years and countries
@@ -77,8 +92,9 @@ def calc_share(df, techs, tech_label):
     df_tech.drop(columns=['share'], inplace=True)
 
     df_tech = df_tech[['REGION','TECHNOLOGY', 'YEAR', 'VALUE', 'absolute_production']]
+    df_tech['VALUE'] = df_tech['VALUE'].round(4)
+    df_tech['absolute_production'] = df_tech['absolute_production'].round(2)
     df_tech.sort_values(['TECHNOLOGY', 'YEAR'], inplace=True)
-
     return df_tech
 
 def calc_sum(df, techs, tech_label):
@@ -109,8 +125,8 @@ def calc_sum(df, techs, tech_label):
 
 if __name__ == "__main__":
     
-    folderpath = snakemake.params[0] #path to folder with results
-    #folderpath = "results/WP1_NetZero_test/results_csv"
+    #folderpath = snakemake.params[0] #path to folder with results
+    folderpath = "results/Nordic_co2_tax/results_csv"
     df = load_data(folderpath)
     df_el = remove_unnecessary_techs_EL(df)
     df_ren = calc_share(df_el, renewable_techs, 'ELRENEW')
@@ -126,9 +142,11 @@ if __name__ == "__main__":
     df_new = pd.concat([df_ren, df_foss, df_ccs], ignore_index=True)    
     df_new.to_csv(f"{folderpath}/AnnualShareOfProduction.csv", index=False)
 
-    # df_hgfc = remove_unnecessary_techs_HGFC(df)
-    # df_hgfc = calc_sum(df_hgfc, ['HGFCPN2'], 'HGFCPN2')
-    # df_hgfc.to_csv(f"{folderpath}/ProductionFromFuelCells.csv", index=False)
+    df_hgfc = remove_unnecessary_techs_HGFC(df)
+    df_hgfc = calc_sum(df_hgfc, ['HGFCPN2'], 'HGFCPN2')
+    df_hgfc.to_csv(f"{folderpath}/ProductionFromFuelCells.csv", index=False)
+
+    print("New result variables have been calculated and written to csv files for the following folder: ", folderpath)
 
    
 # check if renew and fossil add together to 1

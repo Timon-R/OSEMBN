@@ -6,7 +6,7 @@ This Python script decodes technology and fuel codes.
 The main function creates a new or updates a CSV file with appended decoded descriptions in a new column.
 
 Functions:
-1. decode_code(code, specifier=None): Decodes an OSeMBE Fuel Technology or Emission code. The specifier can be 'country', 'commodity', 'technology', 'energy_level', 'age', 'size' to only return that information about the code.
+1. decode_code(code, specifier=None): Decodes an OSeMBE Fuel Technology or Emission code. The specifier can be 'country', 'commodity', 'technology', 'energy_level', 'age', 'size' to only return that information abaut the code.
 2. add_code_descriptions_to_csv(input_csv_filename, output_csv_filename=None): creates a new csv file including a new column with code descriptions.
 
 It can also be used from the command line to decode a single code or to modify a CSV file.
@@ -16,7 +16,7 @@ input_csv_filename = 'input_data\\WP1_NetZero\\data\\FUEL.csv'
 output_csv_filename = 'output_codes_fuel.csv'
 add_code_descriptions_to_csv(input_csv_filename, output_csv_filename)
 
-Author: Timon Renzelmann
+@author: Timon Renzelmann
 """
 
 import sys
@@ -46,7 +46,7 @@ country_codes = {
     'LU': 'Luxembourg',
     'LV': 'Latvia',
     'MT': 'Malta',
-    'NL': 'The Netherlands',
+    'NL': 'Netherlands',
     'NO': 'Norway',
     'PL': 'Poland',
     'PT': 'Portugal',
@@ -77,8 +77,7 @@ commodity_codes = { # can also be an emission
     'UR': 'Uranium',
     'WS': 'Waste',
     'WI': 'Wind',
-    'H1': 'Hydrogen 1',
-    'H2': 'Hydrogen 2'
+    'HG': 'Hydrogen',
 }
 
 technology_codes = {
@@ -125,6 +124,10 @@ age_codes = {
     'N': 'New',
 }
 
+#     HO	Hydro power
+# SO	Solar pv
+# WI	Wind power (or only onshore wind)
+# WO	Wind offshore (not in this repo)
 emission_codes = {
     'CO2': 'Carbon dioxide',
     'PM25': 'Particulate matter 2.5',
@@ -217,13 +220,12 @@ def decode_code(code, specifier=None, is_emission=False):
         elif specifier == 'size':
             description = size_description
         return description
-    else:
-        print('Warning: The code is not 4 or 9 digits long and the boolean is_emission is set to false.')
+    else:             
         for emission in emission_codes:
             if emission in code:
-                print('The code seems to be an emission.')
-                return decode_code(code, specifier, True)
-                       
+                print('The code: "' + code + '" seems to be an emission. Set the boolean is_emission to True to decode it.')
+        raise ValueError('The code:"' + code +'" is not 4 or 9 digits long and the boolean is_emission is set to false.') 
+                        
     
 def add_code_descriptions_to_csv(input_csv_filename, output_csv_filename=None):
     """Modifies a CSV file by adding a ' #codedescription' column.

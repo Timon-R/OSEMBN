@@ -1,6 +1,6 @@
 '''
 This script modifies the graphml file to add the node id as a new attribute to the fuel nodes.
-This enables to see the fuel-codes in the graph, too when using external software like yEd.
+This enables to see the fuel-codes in the graph too.
 '''
 
 import xml.etree.ElementTree as ET

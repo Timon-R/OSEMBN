@@ -3,6 +3,7 @@
 
 This repo contains the Open Source Energy Modelling Base for the Nordic countries (OSEMBN). It has been derived from the [OSeMBE_ECEMF model](https://github.com/KTH-dESA/OSeMBE_ECEMF) using the scenario WP1_NetZero (version from 20.09.2023 including a correction for the emission activity of the Polish wind energy constraint).
 
+The GSA workflow is based on https://github.com/KTH-dESA/esom_gsa.
 
 ## Structure of the repository
 
@@ -19,7 +20,7 @@ The model contains 5 scenarios.
 This scenario differs from the OSeMBE scenario WP1_NetZero only in that all non-Nordic sets are deleted. This includes technologies, fuels and emissions. This also means that all technologies that represented interconnectors with other non-Nordic countries are also removed, so that the Nordics are completely isolated.
 
 2. **Nordic_no_H2:**
-This scenario includes interconnector technologies to non-Nordic countries, just like the original OSeMBE model. However, each interconnector, such as DKELDEPH2 (Denmark to Germany), has been split into two technologies ending with IH2 for imports into the Nordic country and EH2 for exports from the Nordic country. This was necessary because the annual activity limit used as a constraint doesn't distinguish between modes. The TotalTechnologyAnnualActivityUpperLimit and -LowerLimit were used to set the imports and exports to non-Nordic countries to the results from the OSeMBE WP1_NetZero scenario. However, it should be noted that this constraint neglects the temporal resolutions smaller than one year. This means that imports and exports take place in different time slices. However, the annual values are then the same. The capacity for these interconnectors has been set at 8 GW, which is higher than for the OSeMBE model, to avoid the model not being able to fulfil the constraint. This could be reduced to a lower value, but must be at least slightly higher than for the OSeMBE model, otherwise errors will occur (as the model can't meet the constraint).
+This scenario includes interconnector technologies to non-Nordic countries, just like the original OSeMBE model. However, each interconnector, such as DKELDEPH2 (Denmark to Germany), has been split into two technologies ending with IH2 for imports into the Nordic country and EH2 for exports from the Nordic country. This was necessary because the annual activity limit used as a constraint doesn't distinguish between modes. The TotalTechnologyAnnualActivityUpperLimit and -LowerLimit were used to set the imports and exports to non-Nordic countries to the results from the OSeMBE WP1_NetZero scenario. However, it should be noted that this constraint neglects the temporal resolutions smaller than one year. This means that imports and exports take place in different time slices. However, the annual values are then the same and this difference is minor. 
 
 3. **Nordic:**
 This model includes additional hydrogen technologies (more information on this will be added later). It has the same emissions penalty for CO2 as the OSeMBE model, leading to negative emissions from 2030, exploiting biomass CCS technology, which has a high carbon capture efficiency of 70-80%.

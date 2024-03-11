@@ -5,7 +5,7 @@ Created on Fri Sep 25 14:51:38 2020
 @author: haukeh
 modified by Timon Renzelmann
 It can work with the new import and export techs for electricity ending on EH1 and IH1
-Maybe add 'All countries' as an option for the main function to create a figure for all countries
+It can also take more variables for the main function.
 """
 # Import of required packages
 import numpy as np
@@ -254,7 +254,7 @@ def impex(data, paths, selected_country):
         for i, j in enumerate(paths):
             df_exports = pd.concat([df_exports, dict_path[j]['exports'].loc[[year]]])
             df_imports = pd.concat([df_imports, dict_path[j]['imports'].loc[[year]]])
-            path_ind.append(j.upper())
+            path_ind.append(j)
     df_exports = df_exports.set_index([pd.Index(path_ind, name='paths')],append=True)
     df_imports = df_imports.set_index([pd.Index(path_ind, name='paths')],append=True)
     df_exports = df_exports.T.groupby(level=0).sum().T
@@ -368,7 +368,7 @@ def create_fig(data, paths, country_sel, countries_mod, fuels, colours):
     return fig
 
 # Main function to execute the script
-def main(country, scenarios, temp = False, years=[2015,2020,2030,2040,2050]):
+def main(country, scenarios, temp = False, years=[2015,2020,2030,2040,2050], overwrite = False, width=1500, height=1000):
     """
     Main function to execute the script.
 
@@ -396,10 +396,11 @@ def main(country, scenarios, temp = False, years=[2015,2020,2030,2040,2050]):
     i = 1
     while os.path.exists('visualisations\\elec_gen_{}{}.png'.format(country, '' if i == 1 else f'({i})')):
         i += 1
-
+    if overwrite:
+        i = 1
     figure = create_fig(df_PbTA, scenarios, country, countries_mod, fuels, colours)
     filename = 'visualisations\\elec_gen_{}{}.png'.format(country, '' if i == 1 else f'({i})')
-    pio.write_image(figure, filename, width=1200, height=1000, scale=2)
+    pio.write_image(figure, filename, width=width, height=height, scale=2)
     if temp: 
         plot(figure) #activate this to get closer insights into numbers and hover over the figure
 
@@ -409,19 +410,7 @@ def main(country, scenarios, temp = False, years=[2015,2020,2030,2040,2050]):
 #     scenarios = ['WP1_NetZero']
 #     main(selec_region, scenarios)
 
-# selec_region = 'NO'  # Replace with your desired country code
-# scenarios = ['WP1_NetZero','OSEMBE']
-# main(selec_region, scenarios)
-# print(selec_region+' done')
 # selec_region = 'SE'  # Replace with your desired country code
-# scenarios = ['WP1_NetZero','OSEMBE']
-# main(selec_region, scenarios)
-# print(selec_region+' done')
-# selec_region = 'DK'  # Replace with your desired country code
-# scenarios = ['WP1_NetZero','OSEMBE']
-# main(selec_region, scenarios)
-# print(selec_region+' done')
-# selec_region = 'FI'  # Replace with your desired country code
-# scenarios = ['WP1_NetZero','OSEMBE']
-# main(selec_region, scenarios)
+# scenarios = ['Nordic_no_h2','OSeMBE']
+# main(selec_region, scenarios,temp=True)
 # print(selec_region+' done')

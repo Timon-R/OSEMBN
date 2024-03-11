@@ -1,0 +1,13 @@
+resultfile,filename,REGION,TECHNOLOGY,FUEL,EMISSION
+TotalDiscountedCost,DiscountedCost,"REGION1",,,
+AnnualEmissions,CarbonEmissions,"REGION1",,,"CO2"
+AnnualShareOfProduction,ShareRenewables,"REGION1","ELRENEW",,
+AnnualShareOfProduction,ShareFossil,"REGION1","ELFOSSIL",,
+AnnualShareOfProduction,ShareCCS,"REGION1","ELCCS",,
+NewStorageCapacity,HydrogenStorageCapacity,"REGION1",,,
+AnnualShareOfProduction,ShareSR,"REGION1","SR",,
+AnnualShareOfProduction,ShareSRCCS,"REGION1","SC",,
+AnnualShareOfProduction,ShareBG,"REGION1","BG",,
+AnnualShareOfProduction,ShareBGCCS,"REGION1","BC",,
+AnnualShareOfProduction,ShareElectrolysis,"REGION1","EC",,
+ProductionFromFuelCells,FuelCellUse,"REGION1","HGFCPN2",,

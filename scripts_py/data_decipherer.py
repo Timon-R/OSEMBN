@@ -1,7 +1,9 @@
 '''
-This script uses the code decipherer to decode the codes in the csv files of the input data.
-It also converts the csv files to an excel file if desired.
-Author: Timon Renzelmann
+This script uses otoole to postprocess the input data of the model.
+It converts folders of csv files into excel files.
+It also uses the code decipherer to decode the codes in the excel file.
+
+@author: Timon Renzelmann
 '''
 
 import os
@@ -10,8 +12,10 @@ from code_decipherer import decode_code
 from otoole import convert
 
 # Define paths to original and new result folders
-original_folder = "input_data\\Nordic\\data"
-new_folder = "input_data\\Nordic_decoded"
+# original_folder = "results\\OSEMBE"
+# new_folder = "results\\OSEMBE_decoded"
+original_folder = "input_data\\WP1_NetZero\\data"
+new_folder = "input_data\\WP1_NetZero_decoded"
 
 # Create new folder if it doesn't exist
 if not os.path.exists(new_folder):
@@ -50,5 +54,5 @@ for file_name in os.listdir(original_folder):
         df.to_csv(updated_file_path, index=False)
 
 # Convert csv files to excel file
-convert('config\\otoole.yaml', 'csv', 'excel', original_folder, original_folder + '\\input_data.xlsx')
-convert('config\\config.yaml', 'csv', 'excel', new_folder, new_folder + '\\input_data_decoded.xlsx')
+# convert('config\\config.yaml', 'csv', 'excel', original_folder, original_folder + '\\input_data.xlsx')
+# convert('config\\config.yaml', 'csv', 'excel', new_folder, new_folder + '\\input_data_decoded.xlsx')
