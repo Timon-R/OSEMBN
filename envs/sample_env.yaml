@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas<2.1
+  - setuptools
+  - pyyaml
+  - pip:
+    - git+https://github.com/SALib/SALib@main

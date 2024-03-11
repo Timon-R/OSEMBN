@@ -1,0 +1,12 @@
+name: heatmap_env
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - numpy
+  - matplotlib
+  - pandas
+  - seaborn
+  - pip:
+    - SALib
+    - pyyaml

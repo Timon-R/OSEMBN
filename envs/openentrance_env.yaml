@@ -1,0 +1,13 @@
+# conda environment to run pyam and the openentrance package to create excel files in IAMC format
+name: openentrance-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python==3.11
+  - yaml
+  - pandas
+  - pip:
+    - git+https://github.com/openENTRANCE/openentrance.git
+    - pyam-iamc

@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas<2.1
+  - python=3
+  - seaborn
