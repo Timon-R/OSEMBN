@@ -13,8 +13,11 @@ The input_data folder contains the input data for the different scenarios.
 The scripts_py folder contains python scripts that are independend of the snakemake workflow.
 The scripts_smk folder contains python scripts that are utilized in the snakemake workflow.
 
+## Reference thesis
+Further details about the background of the repository can be found in the Master's thesis report (link will follow here). The thesis report contains a detailed description of the model and the scenarios, as well as the results and the analysis of the results.
+
 ## Scenarios
-The model contains 5 scenarios.
+The model contains 5 scenarios. Changes are noted chronologically (the last three scenarios all include hydrogen).
 
 1. **Nordic_before_interconnectors:**
 This scenario differs from the OSeMBE scenario WP1_NetZero only in that all non-Nordic sets are deleted. This includes technologies, fuels and emissions. This also means that all technologies that represented interconnectors with other non-Nordic countries are also removed, so that the Nordics are completely isolated.
@@ -23,7 +26,7 @@ This scenario differs from the OSeMBE scenario WP1_NetZero only in that all non-
 This scenario includes interconnector technologies to non-Nordic countries, just like the original OSeMBE model. However, each interconnector, such as DKELDEPH2 (Denmark to Germany), has been split into two technologies ending with IH2 for imports into the Nordic country and EH2 for exports from the Nordic country. This was necessary because the annual activity limit used as a constraint doesn't distinguish between modes. The TotalTechnologyAnnualActivityUpperLimit and -LowerLimit were used to set the imports and exports to non-Nordic countries to the results from the OSeMBE WP1_NetZero scenario. However, it should be noted that this constraint neglects the temporal resolutions smaller than one year. This means that imports and exports take place in different time slices. However, the annual values are then the same and this difference is minor. 
 
 3. **Nordic:**
-This model includes additional hydrogen technologies (more information on this will be added later). It has the same emissions penalty for CO2 as the OSeMBE model, leading to negative emissions from 2030, exploiting biomass CCS technology, which has a high carbon capture efficiency of 70-80%.
+This model includes additional hydrogen technologies (detailed values are in the excel sheet and in the thesis report). It has the same emissions penalty for CO2 as the OSeMBE model, leading to negative emissions from 2030, exploiting biomass CCS technology, which has a high carbon capture efficiency of 70-80%.
 
 4. **Nordic_co2_limit:**
 The CO2 emissions penalty has been removed and replaced with an emissions cap that linearly reduces emissions from the base year (2015) to 0 in 2050. Between 2050 and 2060, it stays at 0.
