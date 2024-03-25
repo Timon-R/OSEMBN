@@ -14,7 +14,7 @@ The scripts_py folder contains python scripts that are independend of the snakem
 The scripts_smk folder contains python scripts that are utilized in the snakemake workflow.
 
 ## Reference thesis
-Further details about the background of the repository can be found in the Master's thesis report (link will follow here). The thesis report contains a detailed description of the model and the scenarios, as well as the results and the analysis of the results.
+Further details about the background of the repository can be found in the [Master's thesis report](https://urn.kb.se/resolve?urn=urn:nbn:se:kth:diva-344635). The thesis report contains a detailed description of the model and the scenarios, as well as the results and the analysis of the results.
 
 ## Scenarios
 The model contains 5 scenarios. Changes are noted chronologically (the last three scenarios all include hydrogen).
